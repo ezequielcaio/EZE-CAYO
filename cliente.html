@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Administración</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .user-info { display: flex; justify-content: space-between; align-items: center; }
+        .edit-form { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <div class="user-info">
+        <div>
+            <h2>Panel de Administración</h2>
+            <p id="userDisplay"></p>
+        </div>
+        <a href="login.html">Cerrar Sesión</a>
+    </div>
+
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                
+            </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+    </table>
+
+    <script>
+        // Cargar información del usuario actual
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (currentUser) {
+            document.getElementById('userDisplay').textContent = 
+                `Bienvenido ${currentUser.username} (${currentUser.role})`;
+        }
+
+        // Cargar y mostrar usuarios
+        async function loadUsers() {
+            try {
+                const response = await fetch('login.json');
+                const users = await response.json();
+                const tableBody = document.getElementById('usersTableBody');
+                tableBody.innerHTML = '';
+
+                users.forEach((user, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.username}</td>
+                        <td>${user.role}</td>
+                        <td>
+                            <button onclick="editUserModal.show();(${index})">Editar</button>
+                        
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error cargando usuarios:', error);
+            }
+        }
+
+        // Funciones de edición y eliminación
+        async function editUser(index) {
+            const users = await (await fetch('login.json')).json();
+            const user = users[index];
+            const newUsername = prompt('Ingrese nuevo nombre de usuario:', user.username);
+            const newRole = prompt('Ingrese nuevo rol (admin/cliente/invitado):', user.role);
+
+            if (newUsername && newRole) {
+                users[index] = { ...users[index], username: newUsername, role: newRole };
+                await saveUsers(users);
+            }
+        }
+
+        async function deleteUser(index) {
+            const users = await (await fetch('login.json')).json();
+            users.splice(index, 1);
+            await saveUsers(users);
+        }
+
+        async function saveUsers(users) {
+            try {
+                // En un escenario real, esto sería una llamada a un backend
+                await fetch('login.json', {
+                    method: 'PUT',
+                    body: JSON.stringify(users)
+                });
+                loadUsers();
+            } catch (error) {
+                console.error('Error guardando usuarios:', error);
+            }
+        }
+
+        // Cargar usuarios al iniciar
+        loadUsers();
+    </script>
+</body>
+</html>
